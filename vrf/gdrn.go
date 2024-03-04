@@ -1,4 +1,4 @@
-package modules
+package vrf
 
 import "crypto/sha256"
 
