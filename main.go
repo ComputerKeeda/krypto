@@ -68,6 +68,21 @@ func GenerateUniqueProof(privateKey kyber.Scalar, data []byte) ([]byte, error) {
 	return signature, nil
 }
 
+// Function to verify a unique proof using the public key, original data, and proof
+func VerifyUniqueProof(publicKey kyber.Point, data []byte, proof []byte) (bool, error) {
+	// Initialize the Kyber suite for Edwards25519 curve
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+
+	// Verify the data using Schnorr signature scheme and public key
+	err := schnorr.Verify(suite, publicKey, data, proof)
+	if err != nil {
+		// If there is an error during verification, return false and the error
+		return false, fmt.Errorf("failed to verify proof: %w", err)
+	}
+
+	// If there is no error, the proof is valid
+	return true, nil
+}
 
 func main() {
 	// Initialize the Kyber suite for Edwards25519 curve
@@ -121,4 +136,18 @@ func main() {
 		return
 	}
 	fmt.Printf("Public Key: %s\n", hex.EncodeToString(pubKeyBytes))
+
+
+	// Verify the generated proof using the public key
+	valid, err := VerifyUniqueProof(publicKey, serializedRC, proof)
+	if err != nil {
+		fmt.Printf("Error verifying proof: %v\n", err)
+		return
+	}
+
+	if valid {
+		fmt.Println("Proof is valid.")
+	} else {
+		fmt.Println("Proof is invalid.")
+	}
 }

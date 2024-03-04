@@ -273,3 +273,74 @@ Note: This assumes you already have a private key generated. Typically, in a rea
 > - Optionally, we also print out the public key in hexadecimal format. This could be useful if you want to verify the proof elsewhere.
 >
 > You can run this main function to see the generated proof and public key.
+
+## Step 4: Verify the proof with the corresponding public key
+
+To verify the proof with the corresponding public key and ensure the authenticity of the signed data (in this case, the serialized `RequestCommitmentV2Plus`), we will create a new function `VerifyUniqueProof`. This function will take the public key, the original data (should be the same data used for generating the proof), and the proof itself. It will return a boolean indicating whether the proof is valid.
+
+Here's how you can do this:
+
+```go
+package main
+
+import (
+ "fmt"
+ "go.dedis.ch/kyber/v3"
+ "go.dedis.ch/kyber/v3/sign/schnorr"
+)
+
+// Function to verify a unique proof using the public key, original data, and proof
+func VerifyUniqueProof(publicKey kyber.Point, data []byte, proof []byte) (bool, error) {
+ // Initialize the Kyber suite for Edwards25519 curve
+ suite := edwards25519.NewBlakeSHA256Ed25519()
+
+ // Verify the data using Schnorr signature scheme and public key
+ err := schnorr.Verify(suite, publicKey, data, proof)
+ if err != nil {
+  // If there is an error during verification, return false and the error
+  return false, fmt.Errorf("failed to verify proof: %w", err)
+ }
+
+ // If there is no error, the proof is valid
+ return true, nil
+}
+```
+
+In this code snippet:
+
+- We define a new function `VerifyUniqueProof` that takes a public key of type `kyber.Point`, a byte slice `data`, and a byte slice `proof`.
+- We use the `schnorr.Verify` method from the Kyber library to verify the proof against the data and public key.
+- If the verification is successful (no error is returned), the proof is considered valid, and the function returns `true`.
+- If there is any error during verification, the proof is considered invalid, and the function returns `false` along with the error.
+
+Now, let's integrate this verification step into the `main` function or another suitable place in your program to test it:
+
+```go
+func main() {
+ // ... (previous code for generating keys, serializing data, and creating proof)
+
+ // Verify the generated proof using the public key
+ valid, err := VerifyUniqueProof(publicKey, serializedRC, proof)
+ if err != nil {
+  fmt.Printf("Error verifying proof: %v\n", err)
+  return
+ }
+
+ if valid {
+  fmt.Println("Proof is valid.")
+ } else {
+  fmt.Println("Proof is invalid.")
+ }
+
+ // ... (any additional code)
+}
+```
+
+In this part of the `main` function:
+
+- We call `VerifyUniqueProof` with the public key, the serialized data, and the generated proof.
+- We check the result and print out whether the proof is valid.
+
+This will complete the verification process.
+
+
