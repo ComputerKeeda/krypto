@@ -2,12 +2,11 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
-	"go.dedis.ch/kyber/v3"
+
 	"go.dedis.ch/kyber/v3/group/edwards25519"
-	"go.dedis.ch/kyber/v3/util/random"
 )
 
 type RequestCommitmentV2Plus struct {
@@ -18,66 +17,74 @@ type RequestCommitmentV2Plus struct {
 	extraArgs        byte
 }
 
+// Function to serialize RequestCommitmentV2Plus into a deterministic byte slice
+func SerializeRequestCommitmentV2Plus(rc RequestCommitmentV2Plus) ([]byte, error) {
+	var buf bytes.Buffer
+
+	// Encode the blockNum
+	err := binary.Write(&buf, binary.BigEndian, rc.blockNum)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode blockNum: %w", err)
+	}
+
+	// Encode the stationId as a fixed size or prefixed with its length
+	// Here, we choose to prefix with length for simplicity
+	if err := binary.Write(&buf, binary.BigEndian, uint64(len(rc.stationId))); err != nil {
+		return nil, fmt.Errorf("failed to encode stationId length: %w", err)
+	}
+	buf.WriteString(rc.stationId)
+
+	// Encode the upperBound
+	err = binary.Write(&buf, binary.BigEndian, rc.upperBound)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode upperBound: %w", err)
+	}
+
+	// Encode the requesterAddress as a fixed size or prefixed with its length
+	if err := binary.Write(&buf, binary.BigEndian, uint64(len(rc.requesterAddress))); err != nil {
+		return nil, fmt.Errorf("failed to encode requesterAddress length: %w", err)
+	}
+	buf.WriteString(rc.requesterAddress)
+
+	// Encode the extraArgs
+	buf.WriteByte(rc.extraArgs)
+
+	return buf.Bytes(), nil
+}
+
+
 func main() {
+	// Initialize the Kyber suite for Edwards25519 curve
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+
+	// Generate a new private key
+	privateKey := suite.Scalar().Pick(suite.RandomStream())
+
+	// Derive the public key from the private key
+	publicKey := suite.Point().Mul(privateKey, nil)
+
+	// Print out the public and private keys
+	fmt.Printf("Private Key: %s\n", privateKey)
+	fmt.Printf("Public Key: %s\n", publicKey)
+
+	fmt.Println("________________________________________________________")
+
 	// Initialize the RequestCommitmentV2Plus
 	rc := RequestCommitmentV2Plus{
 		blockNum:         123456,
-		stationId:        "Station42",
+		stationId:        "Station12",
 		upperBound:       999999,
 		requesterAddress: "0x123456789abcdef",
 		extraArgs:        0x01,
 	}
 
-	// Initialize Kyber suite and generate randomness
-	suite := edwards25519.NewBlakeSHA256Ed25519()
-	randomScalar := suite.Scalar().Pick(random.New())
-
-	// Generate the proof using the rc and the randomScalar
-	proof, err := GenerateProof(suite, rc, randomScalar)
+	// Serialize the RequestCommitmentV2Plus instance
+	serializedRC, err := SerializeRequestCommitmentV2Plus(rc)
 	if err != nil {
-		fmt.Printf("Error generating proof: %v\n", err)
+		fmt.Printf("Error serializing RequestCommitmentV2Plus: %v\n", err)
 		return
 	}
 
-	// Use the proof to generate a unique random number
-	randomNumber := GenerateRandomNumber(proof)
-
-	fmt.Printf("Unique Random Number: %x\n", randomNumber)
-}
-
-// GenerateProof creates a proof based on the RequestCommitmentV2Plus and a Kyber scalar
-func GenerateProof(suite kyber.Group, rc RequestCommitmentV2Plus, seed kyber.Scalar) ([]byte, error) {
-	var buf bytes.Buffer
-
-	// Encode the RequestCommitmentV2Plus into the buffer
-	err := binary.Write(&buf, binary.BigEndian, rc.blockNum)
-	if err != nil {
-		return nil, err
-	}
-	buf.WriteString(rc.stationId)
-	err = binary.Write(&buf, binary.BigEndian, rc.upperBound)
-	if err != nil {
-		return nil, err
-	}
-	buf.WriteString(rc.requesterAddress)
-	buf.WriteByte(rc.extraArgs)
-
-	// Convert the Kyber scalar (seed) into bytes and write it to the buffer
-	seedBytes, err := seed.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	buf.Write(seedBytes)
-
-	// Create a SHA-256 hash of the buffer as the proof
-	hash := sha256.Sum256(buf.Bytes())
-	return hash[:], nil // Returning the proof as a byte slice
-}
-
-// GenerateRandomNumber generates a unique random number based on the proof
-func GenerateRandomNumber(proof []byte) []byte {
-	// For simplicity, we're just using another hash of the proof as the "unique" random number.
-	// In a real-world application, you might want to use a more sophisticated method.
-	randomNumber := sha256.Sum256(proof)
-	return randomNumber[:]
+	// Print out the serialized data in hexadecimal format
+	fmt.Printf("Serialized RequestCommitmentV2Plus: %s\n", hex.EncodeToString(serializedRC))
 }
