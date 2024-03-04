@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -84,6 +85,13 @@ func VerifyUniqueProof(publicKey kyber.Point, data []byte, proof []byte) (bool, 
 	return true, nil
 }
 
+// Function to generate a deterministic random number from a proof
+func GenerateDeterministicRandomNumber(proof []byte) ([]byte, error) {
+	// Apply a SHA-256 hash to the proof to generate the random number
+	hash := sha256.Sum256(proof)
+	return hash[:], nil
+}
+
 func main() {
 	// Initialize the Kyber suite for Edwards25519 curve
 	suite := edwards25519.NewBlakeSHA256Ed25519()
@@ -137,7 +145,6 @@ func main() {
 	}
 	fmt.Printf("Public Key: %s\n", hex.EncodeToString(pubKeyBytes))
 
-
 	// Verify the generated proof using the public key
 	valid, err := VerifyUniqueProof(publicKey, serializedRC, proof)
 	if err != nil {
@@ -150,4 +157,14 @@ func main() {
 	} else {
 		fmt.Println("Proof is invalid.")
 	}
+
+	// Generate a deterministic random number from the proof
+	randomNumber, err := GenerateDeterministicRandomNumber(proof)
+	if err != nil {
+		fmt.Printf("Error generating deterministic random number: %v\n", err)
+		return
+	}
+
+	// Print out the deterministic random number in hexadecimal format
+	fmt.Printf("Deterministic Random Number: %s\n", hex.EncodeToString(randomNumber))
 }
