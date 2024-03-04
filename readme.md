@@ -204,3 +204,72 @@ In this code snippet:
 - We then use the Schnorr signing method provided by Kyber to sign the data with the private key. The Schnorr signature scheme is known for its simplicity and security.
 
 Note: This assumes you already have a private key generated. Typically, in a real-world application, this private key would be securely stored and managed. For testing purposes, you can generate a new private key using Kyber, but in actual usage, this key should be securely generated and stored beforehand.
+
+> example of how you could modify your main function to test the GenerateUniqueProof function. This includes generating a private and public key pair, serializing the RequestCommitmentV2Plus structure, and then using the private key to generate a unique proof:
+>
+> ```go
+> package main
+> 
+> import (
+>  "encoding/hex"
+>  "fmt"
+>  "go.dedis.ch/kyber/v3"
+>  "go.dedis.ch/kyber/v3/group/edwards25519"
+>  "go.dedis.ch/kyber/v3/sign/schnorr"
+>  "go.dedis.ch/kyber/v3/util/random"
+> )
+> 
+> func main() {
+>  // Initialize the Kyber suite for Edwards25519 curve
+>  suite := edwards25519.NewBlakeSHA256Ed25519()
+> 
+>  // Generate a private and public key pair
+>  privateKey := suite.Scalar().Pick(random.New())
+>  publicKey := suite.Point().Mul(privateKey, nil)
+> 
+>  // Initialize the RequestCommitmentV2Plus
+>  rc := RequestCommitmentV2Plus{
+>   blockNum:         123456,
+>   stationId:        "Station42",
+>   upperBound:       999999,
+>   requesterAddress: "0x123456789abcdef",
+>   extraArgs:        0x01,
+>  }
+> 
+>  // Serialize the RequestCommitmentV2Plus instance
+>  serializedRC, err := SerializeRequestCommitmentV2Plus(rc)
+>  if err != nil {
+>   fmt.Printf("Error serializing RequestCommitmentV2Plus: %v\n", err)
+>   return
+>  }
+> 
+>  // Generate a unique proof using the private key and serialized data
+>  proof, err := GenerateUniqueProof(privateKey, serializedRC)
+>  if err != nil {
+>   fmt.Printf("Error generating unique proof: %v\n", err)
+>   return
+>  }
+> 
+>  // Print out the generated proof in hexadecimal format
+>  fmt.Printf("Generated Proof: %s\n", hex.EncodeToString(proof))
+> 
+>  // Optionally, print the public key for verification purposes
+>  pubKeyBytes, err := publicKey.MarshalBinary()
+>  if err != nil {
+>   fmt.Printf("Error marshaling public key: %v\n", err)
+>   return
+>  }
+>  fmt.Printf("Public Key: %s\n", hex.EncodeToString(pubKeyBytes))
+> }
+> ```
+>
+> In this main function:
+>
+> - We initialize the cryptographic suite using the Edwards25519 curve.
+> - We generate a new private key and corresponding public key.
+> - We initialize your RequestCommitmentV2Plus structure and serialize it.
+> - We call GenerateUniqueProof with the private key and the serialized data to create the proof.
+> - We print out the generated proof in hexadecimal format for inspection.
+> - Optionally, we also print out the public key in hexadecimal format. This could be useful if you want to verify the proof elsewhere.
+>
+> You can run this main function to see the generated proof and public key.

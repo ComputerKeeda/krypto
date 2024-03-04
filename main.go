@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"go.dedis.ch/kyber/v3/sign/schnorr"
 )
 
 type RequestCommitmentV2Plus struct {
@@ -52,6 +54,20 @@ func SerializeRequestCommitmentV2Plus(rc RequestCommitmentV2Plus) ([]byte, error
 	return buf.Bytes(), nil
 }
 
+// Function to generate a unique proof using the private key and serialized data
+func GenerateUniqueProof(privateKey kyber.Scalar, data []byte) ([]byte, error) {
+	// Initialize the Kyber suite for Edwards25519 curve
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+
+	// Sign the data using Schnorr signature scheme and private key
+	signature, err := schnorr.Sign(suite, privateKey, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign data: %w", err)
+	}
+
+	return signature, nil
+}
+
 
 func main() {
 	// Initialize the Kyber suite for Edwards25519 curve
@@ -87,4 +103,22 @@ func main() {
 
 	// Print out the serialized data in hexadecimal format
 	fmt.Printf("Serialized RequestCommitmentV2Plus: %s\n", hex.EncodeToString(serializedRC))
+
+	// Generate a unique proof using the private key and serialized data
+	proof, err := GenerateUniqueProof(privateKey, serializedRC)
+	if err != nil {
+		fmt.Printf("Error generating unique proof: %v\n", err)
+		return
+	}
+
+	// Print out the generated proof in hexadecimal format
+	fmt.Printf("Generated Proof: %s\n", hex.EncodeToString(proof))
+
+	// Optionally, print the public key for verification purposes
+	pubKeyBytes, err := publicKey.MarshalBinary()
+	if err != nil {
+		fmt.Printf("Error marshaling public key: %v\n", err)
+		return
+	}
+	fmt.Printf("Public Key: %s\n", hex.EncodeToString(pubKeyBytes))
 }
