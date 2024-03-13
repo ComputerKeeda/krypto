@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-
 	/*
 		Private Key: 003de0dabc22c6b53d0e7bc34ec03eb4a2ac3991d5fa820ed613c000838f4d05
 		Public Key: 4f7d61abd67bfad4400d454e7771b1e950c08d0272bc49588ea7d06fb773419d

@@ -1,0 +1,49 @@
+package model
+
+import (
+	"github.com/ethereum/go-ethereum/common"
+	"go.dedis.ch/kyber/v3"
+	"math/big"
+)
+
+type Proof struct {
+	PublicKey kyber.Point
+	Gamma     kyber.Point
+	C         kyber.Scalar
+	S         kyber.Scalar
+	Seed      kyber.Scalar
+	Output    kyber.Scalar
+}
+
+type ReqCommit struct {
+	BlockNum uint64
+	SubId    uint64
+	NumWords uint64
+	Sender   string
+}
+
+type PodData struct {
+	PodNumber uint64
+	PodID     string
+	Sender    string
+}
+
+// reference to the proof components
+type VRFTypesProof struct {
+	Pk            [2]*big.Int
+	Gamma         [2]*big.Int
+	C             *big.Int
+	S             *big.Int
+	Seed          *big.Int
+	UWitness      common.Address
+	CGammaWitness [2]*big.Int
+	SHashWitness  [2]*big.Int
+	ZInv          *big.Int
+}
+type VRFTypesRequestCommitment struct {
+	BlockNum         uint64
+	SubId            uint64
+	CallbackGasLimit uint32
+	NumWords         uint32
+	Sender           common.Address
+}
