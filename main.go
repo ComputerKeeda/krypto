@@ -96,7 +96,17 @@ func main() {
 
 	// Convert the byte slice to a big.Int
 	randomNumBigInt := new(big.Int).SetBytes(randomNumber)
+	// The modulus value passed as a uint64 variable
+	modulusValue := uint64(10)
 
+	// Convert modulusValue to big.Int
+	modulusBigInt := new(big.Int).SetUint64(modulusValue)
+
+	// Calculate modulus
+	result := new(big.Int).Mod(randomNumBigInt, modulusBigInt)
+
+	// Print the result
+	fmt.Println("Result of modulus operation:", result)
 	// Print out the deterministic random number in decimal format
 	fmt.Printf("Deterministic Random Number (Decimal): %s\n", randomNumBigInt.String())
 }
